@@ -5,14 +5,14 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
- * 
+ *
  * * Redistributions of source code must retain the above copyright
  *   notice, this list of conditions and the following disclaimer.
  * * Redistributions in binary form must reproduce the above
  *   copyright notice, this list of conditions and the following disclaimer
  *   in the documentation and/or other materials provided with the
  *   distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -36,71 +36,103 @@
 using Tins::Memory::InputMemoryStream;
 using Tins::Memory::OutputMemoryStream;
 
-namespace Tins {
+namespace Tins
+{
 
-// Auth
+    // Auth
 
-Dot11Authentication::Dot11Authentication(const address_type& dst_hw_addr, 
-                                         const address_type& src_hw_addr) 
-: Dot11ManagementFrame(dst_hw_addr, src_hw_addr), body_() {
-    subtype(Dot11::AUTH);
-}
+    Dot11Authentication::Dot11Authentication(const address_type &dst_hw_addr,
+                                             const address_type &src_hw_addr)
+        : Dot11ManagementFrame(dst_hw_addr, src_hw_addr), body_()
+    {
+        subtype(Dot11::AUTH);
+    }
 
-Dot11Authentication::Dot11Authentication(const uint8_t* buffer, uint32_t total_sz) 
-: Dot11ManagementFrame(buffer, total_sz) {
-    InputMemoryStream stream(buffer, total_sz);
-    stream.skip(management_frame_size());
-    stream.read(body_);
-    parse_tagged_parameters(stream);
-}
+    Dot11Authentication::Dot11Authentication(const uint8_t *buffer, uint32_t total_sz)
+        : Dot11ManagementFrame(buffer, total_sz)
+    {
+        InputMemoryStream stream(buffer, total_sz);
+        stream.skip(management_frame_size());
+        stream.read(body_.auth_algorithm);
+        stream.read(body_.auth_seq_number);
+        stream.read(body_.status_code);
 
-void Dot11Authentication::auth_algorithm(uint16_t new_auth_algorithm) {
-    body_.auth_algorithm = Endian::host_to_le(new_auth_algorithm);
-}
+        uint32_t remaining_size = total_sz - (stream.pointer() - buffer);
+        body_.additional.assign(stream.pointer(), stream.pointer() + remaining_size);
 
-void Dot11Authentication::auth_seq_number(uint16_t new_auth_seq_number) {
-    body_.auth_seq_number = Endian::host_to_le(new_auth_seq_number);
-}
+        parse_tagged_parameters(stream);
+    }
 
-void Dot11Authentication::status_code(uint16_t new_status_code) {
-    body_.status_code = Endian::host_to_le(new_status_code);
-}
+    void Dot11Authentication::auth_algorithm(uint16_t new_auth_algorithm)
+    {
+        body_.auth_algorithm = Endian::host_to_le(new_auth_algorithm);
+    }
 
-uint32_t Dot11Authentication::header_size() const {
-    return Dot11ManagementFrame::header_size() + sizeof(body_);
-}
+    void Dot11Authentication::auth_seq_number(uint16_t new_auth_seq_number)
+    {
+        body_.auth_seq_number = Endian::host_to_le(new_auth_seq_number);
+    }
 
-void Dot11Authentication::write_fixed_parameters(OutputMemoryStream& stream) {
-    stream.write(body_);
-}
+    void Dot11Authentication::status_code(uint16_t new_status_code)
+    {
+        body_.status_code = Endian::host_to_le(new_status_code);
+    }
 
-// Deauth
+    uint32_t Dot11Authentication::header_size() const
+    {
+        return Dot11ManagementFrame::header_size() + sizeof(body_.auth_algorithm) + sizeof(body_.auth_seq_number) + sizeof(body_.status_code) + body_.additional.size();
+    }
 
-Dot11Deauthentication::Dot11Deauthentication(const address_type& dst_hw_addr, 
-                                             const address_type& src_hw_addr) 
-: Dot11ManagementFrame(dst_hw_addr, src_hw_addr), body_() {
-    subtype(Dot11::DEAUTH);
-}
+    const std::vector<uint8_t> &Dot11Authentication::additional() const
+    {
+        return body_.additional;
+    }
 
-Dot11Deauthentication::Dot11Deauthentication(const uint8_t* buffer, uint32_t total_sz) 
-: Dot11ManagementFrame(buffer, total_sz) {
-    InputMemoryStream stream(buffer, total_sz);
-    stream.skip(management_frame_size());
-    stream.read(body_);
-    parse_tagged_parameters(stream);
-}
+    void Dot11Authentication::additional(const std::vector<uint8_t> &params)
+    {
+        body_.additional = params;
+    }
 
-void Dot11Deauthentication::reason_code(uint16_t new_reason_code) {
-    body_.reason_code = Endian::host_to_le(new_reason_code);
-}
+    void Dot11Authentication::write_fixed_parameters(Memory::OutputMemoryStream &stream)
+    {
+        stream.write(body_.auth_algorithm);
+        stream.write(body_.auth_seq_number);
+        stream.write(body_.status_code);
+        stream.write(body_.additional.data(), body_.additional.size());
+    }
 
-uint32_t Dot11Deauthentication::header_size() const {
-    return Dot11ManagementFrame::header_size() + sizeof(body_);
-}
+    // Deauth
 
-void Dot11Deauthentication::write_fixed_parameters(OutputMemoryStream& stream) {
-    stream.write(body_);
-}
+    Dot11Deauthentication::Dot11Deauthentication(const address_type &dst_hw_addr,
+                                                 const address_type &src_hw_addr)
+        : Dot11ManagementFrame(dst_hw_addr, src_hw_addr), body_()
+    {
+        subtype(Dot11::DEAUTH);
+    }
+
+    Dot11Deauthentication::Dot11Deauthentication(const uint8_t *buffer, uint32_t total_sz)
+        : Dot11ManagementFrame(buffer, total_sz)
+    {
+        InputMemoryStream stream(buffer, total_sz);
+        stream.skip(management_frame_size());
+        stream.read(body_);
+        parse_tagged_parameters(stream);
+    }
+
+    void Dot11Deauthentication::reason_code(uint16_t new_reason_code)
+    {
+        body_.reason_code = Endian::host_to_le(new_reason_code);
+    }
+
+    uint32_t Dot11Deauthentication::header_size() const
+    {
+        return Dot11ManagementFrame::header_size() + sizeof(body_);
+    }
+
+    void Dot11Deauthentication::write_fixed_parameters(OutputMemoryStream &stream)
+    {
+        stream.write(body_);
+    }
 
 } // Tins
 
