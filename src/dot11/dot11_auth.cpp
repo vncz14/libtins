@@ -32,7 +32,6 @@
 
 #include <cstring>
 #include <tins/memory_helpers.h>
-
 using Tins::Memory::InputMemoryStream;
 using Tins::Memory::OutputMemoryStream;
 
@@ -60,7 +59,7 @@ namespace Tins
 
         body_.additional.assign(stream.pointer(), stream.pointer() + stream.size());
 
-        parse_tagged_parameters(stream);
+        // parse_tagged_parameters(stream);
     }
 
     void Dot11Authentication::auth_algorithm(uint16_t new_auth_algorithm)

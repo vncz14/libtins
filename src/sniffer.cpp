@@ -33,8 +33,6 @@
 #define TINS_PREFIX_INTERFACE(x) (x)
 #endif // _WIN32
 
-#include <iostream>
-
 #include <tins/sniffer.h>
 #include <tins/dot11/dot11_base.h>
 #include <tins/ethernetII.h>
@@ -106,7 +104,6 @@ namespace Tins
     {
         try
         {
-            std::cout << "trying" << typeid(T).name() << "\r\n";
             return new T((const uint8_t *)bytes, len);
         }
         catch (malformed_packet &)
