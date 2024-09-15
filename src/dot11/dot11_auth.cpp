@@ -53,12 +53,12 @@ namespace Tins
     {
         InputMemoryStream stream(buffer, total_sz);
         stream.skip(management_frame_size());
+
         stream.read(body_.auth_algorithm);
         stream.read(body_.auth_seq_number);
         stream.read(body_.status_code);
 
-        uint32_t remaining_size = total_sz - (stream.pointer() - buffer);
-        body_.additional.assign(stream.pointer(), stream.pointer() + remaining_size);
+        body_.additional.assign(stream.pointer(), stream.pointer() + stream.size());
 
         parse_tagged_parameters(stream);
     }
@@ -98,7 +98,8 @@ namespace Tins
         stream.write(body_.auth_algorithm);
         stream.write(body_.auth_seq_number);
         stream.write(body_.status_code);
-        stream.write(body_.additional.data(), body_.additional.size());
+
+        stream.write(body_.additional.begin(), body_.additional.end());
     }
 
     // Deauth
